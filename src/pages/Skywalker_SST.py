@@ -18,6 +18,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 load_dotenv()
 
 # Database connection parameters
@@ -177,6 +186,21 @@ if data_input or uploaded_file is not None:
             # First, try to detect the structure without forcing column names
             data = StringIO(data_input)
             df_raw = pd.read_csv(data)
+
+            acquisition_col = next(
+                (col for col in df_raw.columns if col.strip().lower() == "acquisition started date"),
+                None,
+            )
+
+            def extract_acquisition_dates(df_subset: pd.DataFrame, col_name=acquisition_col):
+                """Return Series of formatted acquisition dates aligned with df_subset."""
+                if col_name and col_name in df_subset.columns:
+                    parsed = pd.to_datetime(
+                        df_subset[col_name].reset_index(drop=True), errors='coerce'
+                    )
+                    formatted = parsed.dt.strftime('%Y-%m-%d')
+                    return formatted.where(~parsed.isna(), None)
+                return None
             
             # Check for different CSV formats
             if 'Component' in df_raw.columns and 'Mass error' in df_raw.columns and 'MS response' in df_raw.columns and 'Item description' in df_raw.columns:
@@ -198,9 +222,13 @@ if data_input or uploaded_file is not None:
                         'mass_error': df_valid['Mass error'],
                         'item_description': df_valid['Item description']  # For instrument detection
                     }
-                    
+
                     df_standardized = pd.DataFrame(standardized_data)
-                    
+
+                    acquisition_dates = extract_acquisition_dates(df_valid)
+                    if acquisition_dates is not None:
+                        df_standardized['acquisition_date'] = acquisition_dates
+
                 except KeyError as e:
                     errors.append(f"Missing expected column in Component format: {str(e)}")
                     return None, errors, warnings
@@ -230,10 +258,14 @@ if data_input or uploaded_file is not None:
                         'response': df_valid['Response'],
                         'mass_error': df_valid['Mass error (ppm)']
                     }
-                    
+
                     df_standardized = pd.DataFrame(standardized_data)
                     # Processing complete (no warning messages)
-                    
+
+                    acquisition_dates = extract_acquisition_dates(df_valid)
+                    if acquisition_dates is not None:
+                        df_standardized['acquisition_date'] = acquisition_dates
+
                 except KeyError as e:
                     errors.append(f"Missing expected column in new format: {str(e)}")
                     return None, errors, warnings
@@ -322,7 +354,11 @@ if data_input or uploaded_file is not None:
                         warnings.append("Component column not found, using Peptide column instead")
                     
                     df_standardized = pd.DataFrame(standardized_data)
-                    
+
+                    acquisition_dates = extract_acquisition_dates(df_raw)
+                    if acquisition_dates is not None:
+                        df_standardized['acquisition_date'] = acquisition_dates
+
                 except Exception as e:
                     errors.append(f"Error creating standardized data: {str(e)}")
                     return None, errors, warnings
@@ -466,8 +502,14 @@ if st.session_state.show_comments and st.session_state.current_df is not None:
                 else:
                     instrument = csv_instrument
                 
+                acquisition_date = row.get("acquisition_date") if "acquisition_date" in row else None
+                if pd.notna(acquisition_date) and str(acquisition_date).strip():
+                    date_value = str(acquisition_date)
+                else:
+                    date_value = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
                 data = {
-                    "Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Date": date_value,
                     "Response": response_value,  # Now rounded integer without decimals
                     "Masserrorppm": mass_error,
                     "Peptide": row["peptide"],
@@ -653,7 +695,9 @@ def get_date_filter(period):
 
 # Filter data to include only rows from selected time period
 if df is not None:
-    df['Date'] = pd.to_datetime(df['Date'])  # Ensure 'Date' is in datetime format
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce', format='mixed')
+    if df['Date'].isna().any():
+        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     
     # Apply time period filter
     if time_period == "Data range":

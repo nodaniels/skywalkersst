@@ -18,6 +18,15 @@ def main():
         st.switch_page(target_page)
         return
 
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"] {display: none;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.set_page_config(layout="wide")
     st.header("Tools for databases", divider="red")
     st.write("Welcome: " + str(user))
