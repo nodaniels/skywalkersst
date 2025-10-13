@@ -1,0 +1,13 @@
+# Core dependencies
+streamlit==1.49.1
+pandas==2.2.3
+psycopg2-binary==2.9.10
+python-dotenv==1.0.1
+
+# Visualization
+plotly==5.23.0
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Authentication (Novo Nordisk internal)
+msal_streamlit @ git+https://sc216.corp.novocorp.net/research-applications/asaps/msal-streamlit.git@2.1.1
