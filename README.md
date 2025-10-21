@@ -57,7 +57,6 @@ Auto-generated plots show mass error (±5 ppm reference) and response trends by 
 
 ## Troubleshooting
 
-- **Authentication errors:** Clear browser cookies and restart app
 - **CSV errors:** Use decimal points (`.`) not commas, check required fields
 - **Database errors:** Verify `.env` credentials
 
