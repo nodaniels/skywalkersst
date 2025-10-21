@@ -9,7 +9,7 @@ Web application for managing LC-MS System Suitability Test (SST) data from UNIFI
 - Visualize trends with interactive charts
 - Store and manage data in PostgreSQL database
 
-## Setup
+## Setup locally
 
 1. **Install dependencies:**
    ```powershell
@@ -27,7 +27,7 @@ Web application for managing LC-MS System Suitability Test (SST) data from UNIFI
 
 3. **Run the app:**
    ```powershell
-   cd C:\Users\NOFR\Desktop\skywalkersst
+   cd C:\Users\Desktop\skywalkersst
    ~\AppData\Local\Microsoft\WindowsApps\python3.11.exe -m streamlit run src\main.py
    ```
 
